@@ -8,14 +8,14 @@ import android.os.Parcelable;
  * @author Wonder Wei
  * Create date：2020/6/4 10:52 AM 
  */
-public class MsgTest implements Parcelable {
+public class Msg implements Parcelable {
     public int code;
 
-    public MsgTest() {
+    public Msg() {
 
     }
 
-    public MsgTest(int code) {
+    public Msg(int code) {
         this.code = code;
     }
 
@@ -33,19 +33,19 @@ public class MsgTest implements Parcelable {
         dest.writeInt(this.code);
     }
 
-    protected MsgTest(Parcel in) {
+    protected Msg(Parcel in) {
         this.code = in.readInt();
     }
 
-    public static final Creator<MsgTest> CREATOR = new Creator<MsgTest>() {
+    public static final Creator<Msg> CREATOR = new Creator<Msg>() {
         @Override
-        public MsgTest createFromParcel(Parcel source) {
-            return new MsgTest(source);
+        public Msg createFromParcel(Parcel source) {
+            return new Msg(source);
         }
 
         @Override
-        public MsgTest[] newArray(int size) {
-            return new MsgTest[size];
+        public Msg[] newArray(int size) {
+            return new Msg[size];
         }
     };
 }

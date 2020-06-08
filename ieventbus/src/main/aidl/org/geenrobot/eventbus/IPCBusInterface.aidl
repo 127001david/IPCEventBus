@@ -7,4 +7,5 @@ interface IPCBusInterface {
     void registerListener(IIPCEventPostListener listener);
     void unRegisterListener(IIPCEventPostListener listener);
     void postData(in Bundle event);
+    void postStickyData(in Bundle event);
 }

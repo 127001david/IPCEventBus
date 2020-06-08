@@ -93,6 +93,9 @@ public class EventBus {
 
     private final int indexCount;
     private final Logger logger;
+
+    private List<Object> mPostEvent2Remote = new CopyOnWriteArrayList<>();
+    private List<Object> mPostStickyEvent2Remote = new CopyOnWriteArrayList<>();
     private IPCBusInterface mIPCEventManager;
 
     /** Convenience singleton for apps using a process-wide EventBus instance. */
@@ -174,17 +177,37 @@ public class EventBus {
 
                             EventBus.getDefault().post(eventParcelable);
                         }
+
+                        @Override
+                        public void onReceiveStickyEvent(Bundle event) throws RemoteException {
+                            event.setClassLoader(getClass().getClassLoader());
+                            Parcelable eventParcelable = event.getParcelable("event");
+
+                            if (null == eventParcelable) {
+                                return;
+                            }
+
+                            EventBus.getDefault().postSticky(eventParcelable);
+                        }
                     });
                 } catch (RemoteException e) {
                     e.printStackTrace();
                 }
 
-                if (0 < mPost2RemoteEvent.size()) {
-                    for (Object o : mPost2RemoteEvent) {
-                        post2remoteIMPL(o);
+                if (0 < mPostEvent2Remote.size()) {
+                    for (Object o : mPostEvent2Remote) {
+                        post2remote(o);
                     }
 
-                    mPost2RemoteEvent.clear();
+                    mPostEvent2Remote.clear();
+                }
+
+                if (0 < mPostStickyEvent2Remote.size()) {
+                    for (Object o : mPostStickyEvent2Remote) {
+                        postSticky2remote(o);
+                    }
+
+                    mPostStickyEvent2Remote.clear();
                 }
             }
 
@@ -351,26 +374,21 @@ public class EventBus {
 
     /** Posts the given event to remote. */
     public void post2remote(Object event) {
-        if (null == mIPCEventManager) {
-            mPost2RemoteEvent.add(event);
-        } else {
-            post2remoteIMPL(event);
-        }
-    }
-
-    private List<Object> mPost2RemoteEvent = new ArrayList<>();
-
-    private void post2remoteIMPL(Object event) {
         if (event instanceof Parcelable) {
+            if (null == mIPCEventManager) {
+                mPostEvent2Remote.add(event);
+            } else {
+                Bundle data = new Bundle();
+                data.putParcelable("event", (Parcelable) event);
 
-            Bundle data = new Bundle();
-            data.putParcelable("event", (Parcelable) event);
-
-            try {
-                mIPCEventManager.postData(data);
-            } catch (RemoteException e) {
-                e.printStackTrace();
+                try {
+                    mIPCEventManager.postData(data);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
+        } else {
+            throw new IllegalArgumentException("'event' must implements Parcelable");
         }
     }
 
@@ -412,6 +430,25 @@ public class EventBus {
         }
         // Should be posted after it is putted, in case the subscriber wants to remove immediately
         post(event);
+    }
+
+    public void postSticky2remote(Object event) {
+        if (event instanceof Parcelable) {
+            if (null == mIPCEventManager) {
+                mPostStickyEvent2Remote.add(event);
+            } else {
+                Bundle data = new Bundle();
+                data.putParcelable("event", (Parcelable) event);
+
+                try {
+                    mIPCEventManager.postStickyData(data);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            throw new IllegalArgumentException("'event' must implements Parcelable");
+        }
     }
 
     /**
